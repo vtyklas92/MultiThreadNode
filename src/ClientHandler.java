@@ -1,4 +1,3 @@
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.Socket;
 //TODO: Przesyłanie nazwy portu do metody log
@@ -8,6 +7,8 @@ class ClientHandler implements Runnable {
     private static final String TERMINATE = "terminate";
     private static final String OK = "OK";
     private static final String NEWCONNECT = "newconnect";
+
+    private static boolean isTerminated = false;
 
 
     //Odpwiedzi dla klienta
@@ -31,7 +32,6 @@ class ClientHandler implements Runnable {
             String line;
             log("Reading answer:");
             while ((line = in.readLine()) != null) {
-
                 // Wypisujemy stream otrzymany od klienta
                 System.out.printf( clientSocket.getLocalPort() + " --> " + "Message sent from the client: " + line + "\n");
 //                out.println(line);
@@ -39,33 +39,29 @@ class ClientHandler implements Runnable {
                 log("Command: " + commandArray[0]);
                 log("Doing task: ");
 
-                switch(commandArray[0]) {
-
-                    case TERMINATE:
+                switch (commandArray[0]) {
+                    case TERMINATE -> {
                         log("Wykonuję " + commandArray[0]);
                         new DatabaseNode(clientSocket.getPort()).terminate(out);
                         log("Node closed");
-                        break;
-
-                    case NEWCONNECT:
+                    }
+                    case NEWCONNECT -> {
                         log("Wykonuję " + commandArray[0]);
-                        new DatabaseNode(Integer.parseInt(commandArray[1])).connect(out,commandArray[1]);
+                        new DatabaseNode(Integer.parseInt(commandArray[1])).connect(out, commandArray[1]);
                         log("Node connected");
-                        break;
+                    }
                 }
-
-
             }
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
 
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         } finally {
             try {
+                log("Closing streams");
                 if (out != null) {
                     out.close();
                 }
+                log("Closing in");
                 if (in != null) {
                     in.close();
                 }
@@ -74,6 +70,7 @@ class ClientHandler implements Runnable {
                 e.printStackTrace();
             }
         }
+
     }
     private synchronized static void log (String msg){
     //TODO: Przesyłanie nazwy portu do metody log;

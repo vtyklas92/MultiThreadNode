@@ -5,31 +5,36 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-public class DatabaseClient {
-    public static void main(String[] args) throws IOException {
-        // parameter storage
-        String gateway = null;
-        int port = 0;
-        String identifier = null;
-        String command = null;
+public class DatabaseClient implements Runnable {
+    static String gateway = null;
+    static int port = 0;
+    String identifier = null;
+    static String command = null;
+    public static void main(String[] args) {
+        parseArgs(args);
+        new Thread(new DatabaseClient()).start();
+    }
+    public static void parseArgs(String[] args) {
 
-        // Parameter scan loop
-        for(int i=0; i<args.length; i++) {
-            switch (args[i]) {
-                case "-gateway":
-                    String[] gatewayArray = args[++i].split(":");
-                    gateway = gatewayArray[0];
-                    port = Integer.parseInt(gatewayArray[1]);
-                    break;
-                case "-operation":
-                    break;
+    // Parameter scan loop
+    for (int i = 0; i < args.length; i++) {
+        switch (args[i]) {
+            case "-gateway":
+                String[] gatewayArray = args[++i].split(":");
+                gateway = gatewayArray[0];
+                port = Integer.parseInt(gatewayArray[1]);
+                break;
+            case "-operation":
+                break;
 
-                default:
-                    if(command == null) command = args[i];
-                    else if(! "TERMINATE".equals(command)) command += " " + args[i];
+            default:
+                if (command == null) command = args[i];
+                else if (!"TERMINATE".equals(command)) command += " " + args[i];
             }
         }
+    }
 
+        public synchronized void run() {
         // communication socket and streams
         Socket netSocket;
         PrintWriter out;
@@ -61,6 +66,11 @@ public class DatabaseClient {
             System.err.println("No connection with " + gateway + ".");
             System.exit(1);
         }
+    }
+        private synchronized static void log (String msg){
+            System.out.println("[" + Thread.currentThread().getName() + "]: " + msg);
+
+
 
     }
 }

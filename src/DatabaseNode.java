@@ -134,13 +134,11 @@ public class DatabaseNode implements Runnable {
         }
     }
 
-    public synchronized void terminate(PrintWriter out) throws InterruptedException {
+    public synchronized void terminate(PrintWriter out) throws InterruptedException, IOException {
+        //send OK to DatabaseClient
         log("Closing node");
         log("Wysłam odpowiedź do klienta");
-        out.write(OK);
-        out.flush();
-        Thread.sleep(1000);
-        System.exit(0);
+        out.println(OK);
 
     }
 
