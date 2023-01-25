@@ -49,4 +49,14 @@ public class Graph<T> {
     public Iterable<T> getVertices() {
         return adjacencyList.keySet();
     }
+
+    public boolean isEmpty() {
+        return adjacencyList.isEmpty();
+    }
+
+    public int size() {
+        return adjacencyList.size();
+    }
+
+
 }
