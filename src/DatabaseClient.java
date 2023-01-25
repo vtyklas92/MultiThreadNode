@@ -8,9 +8,10 @@ import java.net.UnknownHostException;
 public class DatabaseClient implements Runnable {
     static String gateway = null;
     static int port = 0;
-    String identifier = null;
+    static String identifier = null;
     static String command = null;
-    public static void main(String[] args) {
+    private static final String PORTLOG = "["+identifier+"]: ";
+    public synchronized static void main(String[] args) {
         parseArgs(args);
         new Thread(new DatabaseClient()).start();
     }
@@ -39,19 +40,22 @@ public class DatabaseClient implements Runnable {
         Socket netSocket;
         PrintWriter out;
         BufferedReader in;
+
         try {
-            System.out.println("Connecting with: " + gateway + " at port " + port);
+            log("Connecting with: " + gateway + " at port " + port);
             netSocket = new Socket(gateway, port);
             out = new PrintWriter(netSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(netSocket.getInputStream()));
-            System.out.println("Connected");
+            identifier = String.valueOf(netSocket.getLocalPort());
+            log("Connected");
 
-            System.out.println("Sending: " + command);
+            log("Sending: " + command);
             out.println(command);
             // Read and print out the response
             String response;
             while ((response = in.readLine()) != null) {
-                System.out.println(response);
+                log("Response: " + response);
+//                if(response.equals("OK") && command.equals("terminate")) break;
 
             }
 
@@ -60,15 +64,15 @@ public class DatabaseClient implements Runnable {
             in.close();
             netSocket.close();
         } catch (UnknownHostException e) {
-            System.err.println("Unknown host: " + gateway + ".");
+            log("Unknown host: " + gateway + ".");
             System.exit(1);
         } catch (IOException e) {
-            System.err.println("No connection with " + gateway + ".");
+            log("No connection with " + gateway + ".");
             System.exit(1);
         }
     }
     private synchronized static void log (String msg){
-        System.out.println("[" + Thread.currentThread().getName() + "]: " + msg);
+        System.out.println("[" + Thread.currentThread().getName() + "]: " + msg +"\n");
 
 
 

@@ -51,7 +51,9 @@ public class DatabaseNode implements Runnable {
                 }
                 case CONNECT -> {
                     String[] gateway = args[i + 1].split(":");
+                    log(nodePort + " Adding vertex: " + gateway[0] + " " + gateway[1]);
                     mapOfNodes.addVertex(Integer.parseInt(gateway[1]));
+                    log(nodePort + " Adding edge: " + nodePort + " " + gateway[1]);
                     mapOfNodes.addEdge(nodePort, Integer.parseInt(gateway[1]));
                     log("Handshake with " + gateway[0] + ":" + gateway[1]);
                     connectToOtherNode(Integer.parseInt(gateway[1]));
@@ -80,8 +82,15 @@ public class DatabaseNode implements Runnable {
     public synchronized void connect(PrintWriter out,String port)  {
         try {
             log("CONNECTED " + port);
+            log(nodePort + " Adding vertex: " + port);
             mapOfNodes.addVertex(Integer.valueOf(port));
+            log(nodePort+ " Adding edge: " + nodePort + " " + port);
             mapOfNodes.addEdge(nodePort, port);
+            log(String.valueOf(mapOfNodes.isEmpty()));
+
+            mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
+                log("Connected to " + neighbor);});
+
         }catch(Exception e){
             log("Sending ERROR");
             out.write("ERROR");
@@ -110,7 +119,7 @@ public class DatabaseNode implements Runnable {
             log("Node opened at " + ip + ":" + nodePort);
 
             mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
-                System.out.println("Connecting to " + neighbor);
+                log("Connected to " + neighbor);
             });
 
             // zbieramy klientów w nieskończonej pętli
@@ -120,7 +129,7 @@ public class DatabaseNode implements Runnable {
                 Socket client = server.accept();
 
                 // wypisanie na konsoli infromacji o nowym kliencie
-                System.out.println("New client connected from " + client.getRemoteSocketAddress());
+                log("New client connected from " + client.getLocalPort());
 
                 // tworzymenie nowego wątku dla każdego klienta
                 ClientHandler clientSock = new ClientHandler(client);
@@ -148,7 +157,7 @@ public class DatabaseNode implements Runnable {
         log("Check for neighbours");
         if(mapOfNodes.size() > 1){
             mapOfNodes.getVertices().forEach(n ->{
-                System.out.println(n);
+                log(n + "");
             });
 
             mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
@@ -173,9 +182,13 @@ public class DatabaseNode implements Runnable {
             });
         }
         log("Wysłam odpowiedź do klienta");
+        
         out.println(OK);
 
         Thread.currentThread().interrupt();
+
+        Thread.sleep(1000);
+        System.exit(0);
 
     }
 
@@ -187,10 +200,18 @@ public class DatabaseNode implements Runnable {
         log("Node " + port + " deleted from connections");
     }
 
+    public synchronized void removeNode(PrintWriter out, String port){
+        log("Removing edge between " + nodePort + " and " + port);
+        mapOfNodes.removeEdge(nodePort, port);
+        log("Removing vertex " + port);
+        mapOfNodes.removeVertex(port);
+        out.println(OK);
+    }
+
 
 
     private static void log(String msg){
-        System.out.println("[" + Thread.currentThread().getName() + "]: " +msg);
+        System.out.println("[" + PORTLOG +msg +"\n");
     }
 
     public static int getPort(){

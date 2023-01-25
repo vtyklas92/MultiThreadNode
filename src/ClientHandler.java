@@ -7,6 +7,8 @@ class ClientHandler implements Runnable {
     private static final String TERMINATE = "terminate";
     private static final String OK = "OK";
     private static final String NEWCONNECT = "newconnect";
+    private static final String REMOVE = "remove";
+    private static String PORTLOG = "";
 
     private static boolean isTerminated = false;
 
@@ -15,6 +17,7 @@ class ClientHandler implements Runnable {
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
+        PORTLOG = "["+clientSocket.getLocalPort()+"]: ";
     }
 
     public synchronized void run() {
@@ -33,7 +36,7 @@ class ClientHandler implements Runnable {
             log("Reading answer:");
             while ((line = in.readLine()) != null) {
                 // Wypisujemy stream otrzymany od klienta
-                System.out.printf( clientSocket.getLocalPort() + " --> " + "Message sent from the client: " + line + "\n");
+                log( clientSocket.getLocalPort() + " --> " + "Message sent from the client: " + line);
 //                out.println(line);
                 String[] commandArray = line.split(" ");
                 log("Command: " + commandArray[0]);
@@ -47,8 +50,13 @@ class ClientHandler implements Runnable {
                     }
                     case NEWCONNECT -> {
                         log("Wykonuję " + commandArray[0]);
-                        new DatabaseNode(Integer.parseInt(commandArray[1])).connect(out, commandArray[1]);
+                        new DatabaseNode(clientSocket.getLocalPort()).connect(out, commandArray[1]);
                         log("Node connected");
+                    }
+                    case REMOVE -> {
+                        log("Wykonuję " + commandArray[0]);
+                        new DatabaseNode(Integer.parseInt(commandArray[1])).delate(out, commandArray[1]);
+                        log("Node removed");
                     }
                 }
             }
@@ -75,7 +83,7 @@ class ClientHandler implements Runnable {
     private synchronized static void log (String msg){
     //TODO: Przesyłanie nazwy portu do metody log;
         //Print current port number
-        System.out.println("[" + Thread.currentThread().getName() + "]: " + msg);
+        System.out.println("[" + PORTLOG + "]: " + msg + "\n");
 
     }
 
