@@ -54,7 +54,7 @@ public class DatabaseClient implements Runnable {
             // Read and print out the response
             String response;
             while ((response = in.readLine()) != null) {
-                log("Response: " + response);
+                log(response);
 //                if(response.equals("OK") && command.equals("terminate")) break;
 
             }

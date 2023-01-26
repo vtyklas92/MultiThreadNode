@@ -48,6 +48,7 @@ class ClientHandler implements Runnable {
                         new DatabaseNode(clientSocket.getPort()).terminate(out,String.valueOf(clientSocket.getLocalPort()));
                         log("Node closed");
                         Thread.currentThread().join();
+                        isTerminated = true;
                     }
                     case NEWCONNECT -> {
                         log("Wykonuję " + commandArray[0]);
@@ -66,14 +67,15 @@ class ClientHandler implements Runnable {
             }
         } catch (IOException | InterruptedException e) {
             log("Client Handler closed");
+            if(isTerminated){
+                System.exit(0);
+            }
 
         } finally {
             try {
-                log("Closing streams");
                 if (out != null) {
                     out.close();
                 }
-                log("Closing in");
                 if (in != null) {
                     in.close();
                 }
