@@ -1,23 +1,25 @@
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-//TODO: Opracować connect dla nowych nodów
+import java.util.Objects;
+import java.util.Set;
+
 public class DatabaseNode implements Runnable {
     //parametry wywołania
     private static final String PORT = "-tcpport";
     private static final String RECORD = "-record";
     private static final String CONNECT = "-connect";
     private static final String NEWCONNECT = "newconnect";
-    private static final String DELETE = "delete";
-    private static int nodePort;
+    private static final String REMOVE = "remove";
+    private static Integer nodePort;
     private final static String OK = "OK";
+    private final static String ERROR = "ERROR";
     private static final List<Database> database = new ArrayList<>();
-    private static Graph mapOfNodes = new Graph();
+    private static final Graph<Integer> mapOfNodes = new Graph<>();
 
     DatabaseNode(int nodePort) {
-        this.nodePort = nodePort;
+        DatabaseNode.nodePort = nodePort;
     }
 
     private static final String PORTLOG = "["+nodePort+"]: ";
@@ -43,6 +45,8 @@ public class DatabaseNode implements Runnable {
                     //parametry połączenia
                     nodePort = Integer.parseInt(args[i + 1]);
                     mapOfNodes.addVertex(nodePort);
+//                    log(nodePort + "ADDED");
+
 
                 }
                 case RECORD -> {
@@ -53,6 +57,7 @@ public class DatabaseNode implements Runnable {
                     String[] gateway = args[i + 1].split(":");
                     log(nodePort + " Adding vertex: " + gateway[0] + " " + gateway[1]);
                     mapOfNodes.addVertex(Integer.parseInt(gateway[1]));
+                    log(gateway[1] + "ADDED");
                     log(nodePort + " Adding edge: " + nodePort + " " + gateway[1]);
                     mapOfNodes.addEdge(nodePort, Integer.parseInt(gateway[1]));
                     log("Handshake with " + gateway[0] + ":" + gateway[1]);
@@ -65,13 +70,15 @@ public class DatabaseNode implements Runnable {
     private synchronized static void connectToOtherNode(int port) throws IOException {
         Socket socket = new Socket(InetAddress.getByName("localhost"), port);
         PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-        log("Connecting with: " + "localhost" + " at port " + port);
+        log("Connecting with: " + InetAddress.getByName("localhost") + " at port " + port);
         out.println(NEWCONNECT + " " + nodePort);
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String response = in.readLine();
-        log("Response: " + response);
         if (response.equals(OK)) {
             System.out.println("Connected to node: " + port);
+            out.close();
+            in.close();
+            socket.close();
         } else {
             System.out.println("Connection failed");
             out.close();
@@ -82,23 +89,17 @@ public class DatabaseNode implements Runnable {
     public synchronized void connect(PrintWriter out,String port)  {
         try {
             log("CONNECTED " + port);
-            log(nodePort + " Adding vertex: " + port);
             mapOfNodes.addVertex(Integer.valueOf(port));
-            log(nodePort+ " Adding edge: " + nodePort + " " + port);
-            mapOfNodes.addEdge(nodePort, port);
-            log(String.valueOf(mapOfNodes.isEmpty()));
+            mapOfNodes.addEdge(nodePort, Integer.valueOf(port));
 
             mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
                 log("Connected to " + neighbor);});
 
         }catch(Exception e){
-            log("Sending ERROR");
-            out.write("ERROR");
-            out.flush();
+            out.println();
         }
-        log("Sending OK");
-        out.write(OK);
-        out.flush();
+
+        out.println(OK);
         Thread.currentThread().interrupt();
     }
 
@@ -129,7 +130,7 @@ public class DatabaseNode implements Runnable {
                 Socket client = server.accept();
 
                 // wypisanie na konsoli infromacji o nowym kliencie
-                log("New client connected from " + client.getLocalPort());
+                log("New client connected from " + client.getRemoteSocketAddress());
 
                 // tworzymenie nowego wątku dla każdego klienta
                 ClientHandler clientSock = new ClientHandler(client);
@@ -151,67 +152,62 @@ public class DatabaseNode implements Runnable {
         }
     }
 
-    public synchronized void terminate(PrintWriter out) throws InterruptedException, IOException {
+    public synchronized void terminate(PrintWriter out, String port) throws InterruptedException, IOException {
         //send OK to DatabaseClient
         log("Closing node...");
         log("Check for neighbours");
-        if(mapOfNodes.size() > 1){
-            mapOfNodes.getVertices().forEach(n ->{
-                log(n + "");
-            });
 
-            mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
-                try {
-                    log("Sending DELATE to " + neighbor);
-                    Socket socket = new Socket(InetAddress.getByName("localhost"), (Integer) neighbor);
-                    PrintWriter out1 = new PrintWriter(socket.getOutputStream(), true);
-                    out1.println(DELETE + " " + nodePort);
-                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    String response = in.readLine();
-                    log("Response: " + response);
-                    if (response.equals(OK)) {
-                        System.out.println("Node " + nodePort + " delated from " + neighbor);
-                    } else {
-                        System.out.println("Termination failed");
-                        out.close();
-                        in.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        if(mapOfNodes.size() > 1){
+            mapOfNodes.getVertices().forEach(neighbor -> {
+                log("Neighbour: " + neighbor);
+                log("nodePort: " + port );
+              if(mapOfNodes.isAdjacent(Integer.valueOf(port),neighbor)) {
+                  try {
+                      log("Sending REMOVE to " + neighbor);
+                      Socket socket = new Socket(InetAddress.getByName("localhost"), neighbor);
+                      log("Made new socket with " + neighbor);
+                      PrintWriter out1 = new PrintWriter(socket.getOutputStream(), true);
+                      out1.println(REMOVE + " " + port);
+                      BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                      String response = in.readLine();
+                      log("Response: " + response);
+                      if (response.equals(OK)) {
+                          System.out.println("Node " + nodePort + " delated from " + neighbor);
+                          out1.close();
+                          in.close();
+                      } else {
+                          System.out.println("Termination failed");
+                          out1.close();
+                          in.close();
+                      }
+                  } catch (IOException e) {
+                      e.printStackTrace();
+                  }
+              }
             });
         }
         log("Wysłam odpowiedź do klienta");
-        
         out.println(OK);
-
         Thread.currentThread().interrupt();
 
-        Thread.sleep(1000);
-        System.exit(0);
 
     }
 
-    public synchronized void delate(PrintWriter out, String port) throws IOException {
-        log("DELATE " + port);
-        mapOfNodes.removeEdge(nodePort, Integer.valueOf(port));
-        mapOfNodes.removeVertex(Integer.valueOf(port));
+    public synchronized void delate(PrintWriter out, String source, String dest) throws IOException {
+        log("DELATE " + dest);
+        mapOfNodes.removeEdge(Integer.valueOf(source), Integer.valueOf(dest));
+        mapOfNodes.removeVertex(Integer.valueOf(dest));
         out.println(OK);
-        log("Node " + port + " deleted from connections");
+        log("Node " + dest + " deleted from connections");
+        log("Pozostałe połączenia");
+        mapOfNodes.getNeighbors(Integer.valueOf(source)).forEach(n ->{
+            log(n + "");
+        });
+        Thread.currentThread().interrupt();
     }
-
-    public synchronized void removeNode(PrintWriter out, String port){
-        log("Removing edge between " + nodePort + " and " + port);
-        mapOfNodes.removeEdge(nodePort, port);
-        log("Removing vertex " + port);
-        mapOfNodes.removeVertex(port);
-        out.println(OK);
-    }
-
-
 
     private static void log(String msg){
-        System.out.println("[" + PORTLOG +msg +"\n");
+        System.out.println("[" + PORTLOG + msg);
     }
 
     public static int getPort(){

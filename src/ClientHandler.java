@@ -45,23 +45,27 @@ class ClientHandler implements Runnable {
                 switch (commandArray[0]) {
                     case TERMINATE -> {
                         log("Wykonuję " + commandArray[0]);
-                        new DatabaseNode(clientSocket.getPort()).terminate(out);
+                        new DatabaseNode(clientSocket.getPort()).terminate(out,String.valueOf(clientSocket.getLocalPort()));
                         log("Node closed");
+                        Thread.currentThread().join();
                     }
                     case NEWCONNECT -> {
                         log("Wykonuję " + commandArray[0]);
                         new DatabaseNode(clientSocket.getLocalPort()).connect(out, commandArray[1]);
                         log("Node connected");
+                        Thread.currentThread().join();
                     }
                     case REMOVE -> {
                         log("Wykonuję " + commandArray[0]);
-                        new DatabaseNode(Integer.parseInt(commandArray[1])).delate(out, commandArray[1]);
+                        new DatabaseNode(Integer.parseInt(commandArray[1])).delate(out, String.valueOf(clientSocket.getLocalPort()),commandArray[1]);
                         log("Node removed");
+                        Thread.currentThread().join();
+
                     }
                 }
             }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            log("Client Handler closed");
 
         } finally {
             try {
@@ -83,7 +87,7 @@ class ClientHandler implements Runnable {
     private synchronized static void log (String msg){
     //TODO: Przesyłanie nazwy portu do metody log;
         //Print current port number
-        System.out.println("[" + PORTLOG + "]: " + msg + "\n");
+        System.out.println("[ClientHandler] " + msg);
 
     }
 

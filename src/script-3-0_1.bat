@@ -1,5 +1,5 @@
 rem Start 3 network nodes, then terminate them
-start java DatabaseNode -tcpport 9000 -record 1:1 
+start java DatabaseNode -tcpport 9000 -record 1:1
 timeout 1 > NUL
 start java DatabaseNode -tcpport 9001 -connect localhost:9000 -record 2:2 
 timeout 1 > NUL
