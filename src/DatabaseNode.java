@@ -1,8 +1,8 @@
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 public class DatabaseNode implements Runnable {
@@ -12,11 +12,16 @@ public class DatabaseNode implements Runnable {
     private static final String CONNECT = "-connect";
     private static final String NEWCONNECT = "newconnect";
     private static final String REMOVE = "remove";
+    private static final String GETVALUE = "get-value";
     private static Integer nodePort;
     private final static String OK = "OK";
     private final static String ERROR = "ERROR";
     private static final List<Database> database = new ArrayList<>();
     private static final Graph<Integer> mapOfNodes = new Graph<>();
+
+    private static Set<Integer> visitedNodes = new HashSet<>();
+
+
 
     DatabaseNode(int nodePort) {
         DatabaseNode.nodePort = nodePort;
@@ -183,18 +188,36 @@ public class DatabaseNode implements Runnable {
     }
 
     public synchronized void getValue(PrintWriter out, String key) throws IOException {
-        int value = 0;
-        if(database.contains(Integer.valueOf(key))){
-            value = Integer.valueOf(String.valueOf(database.get(Integer.valueOf(key))));
-            //TODO: Opracować metodę poruszania się po grafie i wyszukiwania zadanych wartości
-        }
-        for (Database database : database) {
-            if (database.getKey() == Integer.valueOf(key)) {
-                value = database.getValue();
+        log("Getting value for key: " + key);
+        if(!mapOfNodes.isEmpty()) {
+            for (Database record : database) {
+                if (record.getKey() == Integer.valueOf(key)) {
+                    out.println(record.getKey() + ":" + record.getValue());
+                    log("Value for key: " + key + " is: " + record.getValue());
+                    Thread.currentThread().interrupt();
+                }
             }
+        }else  {
+
+            mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
+                try {
+                    Socket socket = new Socket(InetAddress.getByName("localhost"), neighbor);
+                    PrintWriter out1 = new PrintWriter(socket.getOutputStream(), true);
+                    visitedNodes.add(nodePort);
+                    out1.println(GETVALUE + " " + key + " " + visitedNodes);
+                    log(visitedNodes + "");
+                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    String response = in.readLine();
+                    if (response.equals() {
+
+                    } else {
+
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         }
-        out.println(value);
-        Thread.currentThread().interrupt();
     }
 
     private static void log(String msg){

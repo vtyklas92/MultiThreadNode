@@ -1,7 +1,4 @@
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class Graph<T> {
     final private HashMap<T, Set<T>> adjacencyList;
@@ -59,5 +56,22 @@ public class Graph<T> {
         return adjacencyList.size();
     }
 
+   //method for bfs traversal
+    public void bfs(T source) {
+        Set<T> visited = new HashSet<>();
+        Queue<T> queue = new LinkedList<>();
+        queue.add(source);
+        visited.add(source);
+        while (!queue.isEmpty()) {
+            T vertex = queue.poll();
+            System.out.print(vertex + " ");
+            for (T v : getNeighbors(vertex)) {
+                if (!visited.contains(v)) {
+                    visited.add(v);
+                    queue.add(v);
+                }
+            }
+        }
+    }
 
 }

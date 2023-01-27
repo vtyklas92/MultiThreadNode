@@ -8,7 +8,8 @@ class ClientHandler implements Runnable {
     private static final String OK = "OK";
     private static final String NEWCONNECT = "newconnect";
     private static final String REMOVE = "remove";
-    private static String PORTLOG = "";
+
+    private static final String GET_VALUE = "get-value";
 
     private static boolean isTerminated = false;
 
@@ -17,7 +18,7 @@ class ClientHandler implements Runnable {
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
-        PORTLOG = "["+clientSocket.getLocalPort()+"]: ";
+       log("["+clientSocket.getLocalPort()+"]: ");
     }
 
     public synchronized void run() {
@@ -61,7 +62,12 @@ class ClientHandler implements Runnable {
                         new DatabaseNode(Integer.parseInt(commandArray[1])).delate(out, String.valueOf(clientSocket.getLocalPort()),commandArray[1]);
                         log("Node removed");
                         Thread.currentThread().join();
-
+                    }
+                    case GET_VALUE -> {
+                        log("Wykonuję " + commandArray[0]);
+                        new DatabaseNode(clientSocket.getLocalPort()).getValue(out, commandArray[1]);
+                        log("Value returned");
+                        Thread.currentThread().join();
                     }
                 }
             }
