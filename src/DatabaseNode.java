@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class DatabaseNode implements Runnable {
+public class DatabaseNode implements Runnable, writeRead {
     //parametry wywołania
     private static final String PORT = "-tcpport";
     private static final String RECORD = "-record";
@@ -13,9 +13,11 @@ public class DatabaseNode implements Runnable {
     private static final String NEWCONNECT = "newconnect";
     private static final String REMOVE = "remove";
     private static final String GETVALUE = "get-value";
+    private static final String CHECK_NEIGHBOURS = "check-neighbours";
     private static Integer nodePort;
     private final static String OK = "OK";
     private final static String ERROR = "ERROR";
+    private final static String NOT_FOUND = "not-found";
     private static final List<Database> database = new ArrayList<>();
     private static final Graph<Integer> mapOfNodes = new Graph<>();
 
@@ -189,36 +191,30 @@ public class DatabaseNode implements Runnable {
 
     public synchronized void getValue(PrintWriter out, String key) throws IOException {
         log("Getting value for key: " + key);
-        if(!mapOfNodes.isEmpty()) {
-            for (Database record : database) {
-                if (record.getKey() == Integer.valueOf(key)) {
-                    out.println(record.getKey() + ":" + record.getValue());
-                    log("Value for key: " + key + " is: " + record.getValue());
-                    Thread.currentThread().interrupt();
+        for (Database db : database) {
+            if (db.getKey() == Integer.parseInt(key)) {
+                out.println(db.getValue());
+                log(db.getKey() + ":" + db.getValue());
+                Thread.currentThread().interrupt();
+                return;
                 }
             }
-        }else  {
+        mapOfNodes.dfs(nodePort, GETVALUE + " " + key);
 
-            mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
-                try {
-                    Socket socket = new Socket(InetAddress.getByName("localhost"), neighbor);
-                    PrintWriter out1 = new PrintWriter(socket.getOutputStream(), true);
-                    visitedNodes.add(nodePort);
-                    out1.println(GETVALUE + " " + key + " " + visitedNodes);
-                    log(visitedNodes + "");
-                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    String response = in.readLine();
-                    if (response.equals() {
 
-                    } else {
 
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-        }
+
     }
+
+        public synchronized void checkNeighbors(PrintWriter out) throws IOException {
+            log("Checking neighbors");
+
+
+            Thread.currentThread().interrupt();
+        }
+
+
+
 
     private static void log(String msg){
         System.out.println("[" + PORTLOG + msg);

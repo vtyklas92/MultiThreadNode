@@ -1,6 +1,7 @@
+import java.io.IOException;
 import java.util.*;
 
-public class Graph<T> {
+public class Graph<T> implements writeRead{
     final private HashMap<T, Set<T>> adjacencyList;
 
     public Graph() {
@@ -56,21 +57,18 @@ public class Graph<T> {
         return adjacencyList.size();
     }
 
-   //method for bfs traversal
-    public void bfs(T source) {
-        Set<T> visited = new HashSet<>();
-        Queue<T> queue = new LinkedList<>();
-        queue.add(source);
-        visited.add(source);
-        while (!queue.isEmpty()) {
-            T vertex = queue.poll();
-            System.out.print(vertex + " ");
-            for (T v : getNeighbors(vertex)) {
-                if (!visited.contains(v)) {
-                    visited.add(v);
-                    queue.add(v);
-                }
-            }
+    public void dfs(int start, String msg) throws IOException {
+        boolean[] visited = new boolean[adjacencyList.size()];
+        dfsRecursive(start, visited, msg);
+    }
+    private void dfsRecursive(int current, boolean[] visited, String msg) throws IOException {
+      visited[current] = true;
+      write(msg,current);
+      for(T dest : adjacencyList.get(current)){
+          if(!visited[current]){
+              dfsRecursive(current, visited, msg);
+          }
+
         }
     }
 

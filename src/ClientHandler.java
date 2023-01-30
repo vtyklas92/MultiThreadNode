@@ -10,6 +10,7 @@ class ClientHandler implements Runnable {
     private static final String REMOVE = "remove";
 
     private static final String GET_VALUE = "get-value";
+    private static final String CHECK_NEIGHBOURS = "check-neighbours";
 
     private static boolean isTerminated = false;
 
@@ -69,6 +70,11 @@ class ClientHandler implements Runnable {
                         log("Value returned");
                         Thread.currentThread().join();
                     }
+//                    case CHECK_NEIGHBOURS -> {
+//                        log("Wykonuję " + commandArray[0]);
+//                        new DatabaseNode(clientSocket.getLocalPort()).checkNeighbours(out);;
+//                        Thread.currentThread().join();
+//                    }
                 }
             }
         } catch (IOException | InterruptedException e) {

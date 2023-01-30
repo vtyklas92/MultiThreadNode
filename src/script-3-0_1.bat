@@ -5,7 +5,9 @@ start java DatabaseNode -tcpport 9001 -connect localhost:9000 -record 2:2
 timeout 1 > NUL
 start java DatabaseNode -tcpport 9002 -connect localhost:9000 -connect localhost:9001 -record 3:3
 timeout 1 > NUL
-java DatabaseClient -gateway localhost:9000 -operation terminate
-java DatabaseClient -gateway localhost:9001 -operation terminate
-java DatabaseClient -gateway localhost:9002 -operation terminate
+
+java DatabaseClient -gateway localhost:9000 -operation get-value 3
+rem java DatabaseClient -gateway localhost:9000 -operation terminate
+rem java DatabaseClient -gateway localhost:9001 -operation terminate
+rem java DatabaseClient -gateway localhost:9002 -operation terminate
 
