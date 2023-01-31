@@ -67,14 +67,14 @@ class ClientHandler implements Runnable {
                     case GET_VALUE -> {
                         log("Wykonuję " + commandArray[0]);
                         new DatabaseNode(clientSocket.getLocalPort()).getValue(out, commandArray[1]);
-                        log("Value returned");
+                        log("Get value - DONE");
                         Thread.currentThread().join();
                     }
-//                    case CHECK_NEIGHBOURS -> {
-//                        log("Wykonuję " + commandArray[0]);
-//                        new DatabaseNode(clientSocket.getLocalPort()).checkNeighbours(out);;
-//                        Thread.currentThread().join();
-//                    }
+                    case CHECK_NEIGHBOURS -> {
+                        log("Wykonuję " + commandArray[0]);
+                        new DatabaseNode(clientSocket.getLocalPort()).getValfromOtherNode(out,commandArray[1]);;
+                        Thread.currentThread().join();
+                    }
                 }
             }
         } catch (IOException | InterruptedException e) {

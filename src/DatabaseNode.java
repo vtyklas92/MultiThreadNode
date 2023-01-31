@@ -17,7 +17,6 @@ public class DatabaseNode implements Runnable, writeRead {
     private static Integer nodePort;
     private final static String OK = "OK";
     private final static String ERROR = "ERROR";
-    private final static String NOT_FOUND = "not-found";
     private static final List<Database> database = new ArrayList<>();
     private static final Graph<Integer> mapOfNodes = new Graph<>();
 
@@ -190,31 +189,47 @@ public class DatabaseNode implements Runnable, writeRead {
     }
 
     public synchronized void getValue(PrintWriter out, String key) throws IOException {
-        log("Getting value for key: " + key);
-        for (Database db : database) {
-            if (db.getKey() == Integer.parseInt(key)) {
-                out.println(db.getValue());
-                log(db.getKey() + ":" + db.getValue());
-                Thread.currentThread().interrupt();
-                return;
-                }
+        //check if database contains key
+        if(database.get(0).getKey() == Integer.valueOf(key)){
+            out.println(database.get(0).getKey() + ":" + database.get(0).getValue());
+            log("Val found");
+            } else{
+              searchGraphforValue(out, key);
             }
-        mapOfNodes.dfs(nodePort, GETVALUE + " " + key);
-
-
-
-
+            Thread.currentThread().interrupt();
     }
 
-        public synchronized void checkNeighbors(PrintWriter out) throws IOException {
-            log("Checking neighbors");
+    public synchronized void getValfromOtherNode(PrintWriter out, String key) throws IOException {
+        if(database.get(0).getKey() == Integer.valueOf(key)){
+                out.println(database.get(0).getKey() + ":" + database.get(0).getValue());
+                log("Val found");
+                Thread.currentThread().interrupt();
+            } else {
+                out.println(ERROR);
+                Thread.currentThread().interrupt();
+            }
+    }
 
-
-            Thread.currentThread().interrupt();
-        }
-
-
-
+        public synchronized void searchGraphforValue(PrintWriter out, String key) throws IOException {
+        Set<Integer> visited = new HashSet<>();
+        mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
+            if(!visited.contains(neighbor)) {
+                visited.add(neighbor);
+                try {
+                        String response = wr(CHECK_NEIGHBOURS + " " + key, neighbor);
+                        if(!response.equals(ERROR)){
+                            out.println(response);
+                            log("Val found on node: " + neighbor);
+                        }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }//dopiero po sprawdzeniu wszystkich nodow i ich sasiedztwa wysylamy ERROR do klienta
+                //TODO: przeskok do nastepnego noda i uznanie go za glownego + przekazanie out writera do klienta
+                //TODO: przy przeskoku przekazac liste odwiedzonych nodow z aktualnego zeby nie powtarzac sprawdzania
+                //TODO: jeżeli set wyslany do nastepnego noda zawiera wszystkich sasiadow nexta wyslij error do klienta
+            }
+        });
+    }
 
     private static void log(String msg){
         System.out.println("[" + PORTLOG + msg);

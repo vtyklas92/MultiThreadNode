@@ -57,19 +57,20 @@ public class Graph<T> implements writeRead{
         return adjacencyList.size();
     }
 
-    public void dfs(int start, String msg) throws IOException {
-        boolean[] visited = new boolean[adjacencyList.size()];
-        dfsRecursive(start, visited, msg);
-    }
-    private void dfsRecursive(int current, boolean[] visited, String msg) throws IOException {
-      visited[current] = true;
-      write(msg,current);
-      for(T dest : adjacencyList.get(current)){
-          if(!visited[current]){
-              dfsRecursive(current, visited, msg);
-          }
-
+    //write dfs alghoritm
+    public void dfs(T vertex, Set<T> visited) {
+        visited.add(vertex);
+        for (T neighbor : getNeighbors(vertex)) {
+            if (!visited.contains(neighbor)) {
+                dfs(neighbor, visited);
+            }
         }
+    }
+    public void dfs(T start) {
+        Set<T> visited = new HashSet<>();
+        dfs(start, visited);
     }
 
 }
+
+
