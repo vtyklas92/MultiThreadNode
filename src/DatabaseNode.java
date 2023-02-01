@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DatabaseNode implements Runnable, writeRead {
     //parametry wywołania
@@ -14,6 +15,7 @@ public class DatabaseNode implements Runnable, writeRead {
     private static final String REMOVE = "remove";
     private static final String GETVALUE = "get-value";
     private static final String CHECK_NEIGHBOURS = "check-neighbours";
+    private static final String SEARCH = "search";
     private static Integer nodePort;
     private final static String OK = "OK";
     private final static String ERROR = "ERROR";
@@ -211,24 +213,53 @@ public class DatabaseNode implements Runnable, writeRead {
     }
 
         public synchronized void searchGraphforValue(PrintWriter out, String key) throws IOException {
-        Set<Integer> visited = new HashSet<>();
-        mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
-            if(!visited.contains(neighbor)) {
-                visited.add(neighbor);
-                try {
+            Set<Integer> visited = new HashSet<>();
+            AtomicBoolean found = new AtomicBoolean(false);
+            mapOfNodes.getNeighbors(nodePort).forEach(neighbor -> {
+                if (!visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    try {
                         String response = wr(CHECK_NEIGHBOURS + " " + key, neighbor);
-                        if(!response.equals(ERROR)){
+                        if (!response.equals(ERROR)) {
                             out.println(response);
                             log("Val found on node: " + neighbor);
+                            found.set(true);
+                            Thread.currentThread().interrupt();
                         }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }//dopiero po sprawdzeniu wszystkich nodow i ich sasiedztwa wysylamy ERROR do klienta
-                //TODO: przeskok do nastepnego noda i uznanie go za glownego + przekazanie out writera do klienta
-                //TODO: przy przeskoku przekazac liste odwiedzonych nodow z aktualnego zeby nie powtarzac sprawdzania
-                //TODO: jeżeli set wyslany do nastepnego noda zawiera wszystkich sasiadow nexta wyslij error do klienta
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+            if (!found.get()) {
+                Set<Integer> nextToCheck = new HashSet<>();
+                for (int i = 0; i < visited.size(); i++) {
+                    Socket socket = new Socket(InetAddress.getByName("localhost"), (Integer) visited.toArray()[i]);
+                    PrintWriter out1 = new PrintWriter(socket.getOutputStream(), true);
+                    out1.println(SEARCH + " " + visited.toArray()[i]);
+                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    while (in.readLine() != null) {
+                        nextToCheck.add(Integer.valueOf(in.readLine()));
+                    }
+                }
+
+                for (Integer i : nextToCheck) {
+                    String response = wr(CHECK_NEIGHBOURS + " " + key, i);
+                    if (!response.equals(ERROR)) {
+                        out.println(response);
+                        log("Val found on node: " + i);
+                        Thread.currentThread().interrupt();
+                    }
+                }
             }
+        }
+
+    public synchronized void search(PrintWriter out, String port){
+        mapOfNodes.getNeighbors(Integer.valueOf(port)).forEach(neighbor -> {
+            out.println(neighbor);
         });
+        out.close();
+        Thread.currentThread().interrupt();
     }
 
     private static void log(String msg){

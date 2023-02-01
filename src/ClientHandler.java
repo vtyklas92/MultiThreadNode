@@ -11,6 +11,7 @@ class ClientHandler implements Runnable {
 
     private static final String GET_VALUE = "get-value";
     private static final String CHECK_NEIGHBOURS = "check-neighbours";
+    private static final String SEARCH = "search";
 
     private static boolean isTerminated = false;
 
@@ -73,6 +74,11 @@ class ClientHandler implements Runnable {
                     case CHECK_NEIGHBOURS -> {
                         log("Wykonuję " + commandArray[0]);
                         new DatabaseNode(clientSocket.getLocalPort()).getValfromOtherNode(out,commandArray[1]);;
+                        Thread.currentThread().join();
+                    }
+                    case SEARCH -> {
+                        log("Wykonuję " + commandArray[0]);
+                        new DatabaseNode(clientSocket.getLocalPort()).search(out,commandArray[1]);
                         Thread.currentThread().join();
                     }
                 }
