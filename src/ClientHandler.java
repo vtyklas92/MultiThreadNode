@@ -10,9 +10,9 @@ class ClientHandler implements Runnable {
     private static final String REMOVE = "remove";
 
     private static final String GET_VALUE = "get-value";
-    private static final String CHECK_NEIGHBOURS = "check-neighbours";
+    private static final String CHECK_FOR_KEY = "check-for-key";
     private static final String SEARCH = "search";
-
+    private static final String CLOSE = "close";
     private static boolean isTerminated = false;
 
 
@@ -71,14 +71,10 @@ class ClientHandler implements Runnable {
                         log("Get value - DONE");
                         Thread.currentThread().join();
                     }
-                    case CHECK_NEIGHBOURS -> {
+                    case CHECK_FOR_KEY -> {
                         log("Wykonuję " + commandArray[0]);
-                        new DatabaseNode(clientSocket.getLocalPort()).getValfromOtherNode(out,commandArray[1]);;
-                        Thread.currentThread().join();
-                    }
-                    case SEARCH -> {
-                        log("Wykonuję " + commandArray[0]);
-                        new DatabaseNode(clientSocket.getLocalPort()).search(out,commandArray[1]);
+                        new DatabaseNode(clientSocket.getLocalPort()).checkForKey(out, commandArray[1]);
+                        log("Check for key - DONE");
                         Thread.currentThread().join();
                     }
                 }
@@ -86,7 +82,13 @@ class ClientHandler implements Runnable {
         } catch (IOException | InterruptedException e) {
             log("Client Handler closed");
             if(isTerminated){
-                System.exit(0);
+                try {
+                    out.println(CLOSE);
+                    clientSocket.close();
+
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
 
         } finally {
